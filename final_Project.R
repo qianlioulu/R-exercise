@@ -1,0 +1,237 @@
+
+# Case Study: Cyclistic
+##Google Data Analytics Capstone Project
+### Qian Li
+### 2022-05-17
+#=====================
+
+
+
+#load libraries 
+library(tidyverse) #calculations
+library(lubridate) # wday(started_at, label = TRUE)
+library(dplyr) # data manipulation, mutate() creates new variables
+library(hms) #get time: as_hms()
+#library(data.table) #exporting data frame
+library(ggplot2) #visualize data
+library(readr)
+
+# STEP 1. COLLECT DATA
+#=====================
+
+# Upload Divvy datasets (csv files)
+X202204_divvy_tripdata <- read_csv("C:/Users/Antti-Pekka/Desktop/google stoneProject/csv/202204-divvy-tripdata.csv")
+X202203_divvy_tripdata <- read_csv("C:/Users/Antti-Pekka/Desktop/google stoneProject/csv/202203-divvy-tripdata.csv")
+X202202_divvy_tripdata <- read_csv("C:/Users/Antti-Pekka/Desktop/google stoneProject/csv/202202-divvy-tripdata.csv")
+X202201_divvy_tripdata <- read_csv("C:/Users/Antti-Pekka/Desktop/google stoneProject/csv/202201-divvy-tripdata.csv")
+X202112_divvy_tripdata <- read_csv("C:/Users/Antti-Pekka/Desktop/google stoneProject/csv/202112-divvy-tripdata.csv")
+X202111_divvy_tripdata <- read_csv("C:/Users/Antti-Pekka/Desktop/google stoneProject/csv/202111-divvy-tripdata.csv")
+X202110_divvy_tripdata <- read_csv("C:/Users/Antti-Pekka/Desktop/google stoneProject/csv/202110-divvy-tripdata.csv")
+X202109_divvy_tripdata <- read_csv("C:/Users/Antti-Pekka/Desktop/google stoneProject/csv/202109-divvy-tripdata.csv")
+X202108_divvy_tripdata <- read_csv("C:/Users/Antti-Pekka/Desktop/google stoneProject/csv/202108-divvy-tripdata.csv")
+X202107_divvy_tripdata <- read_csv("C:/Users/Antti-Pekka/Desktop/google stoneProject/csv/202107-divvy-tripdata.csv")
+X202106_divvy_tripdata <- read_csv("C:/Users/Antti-Pekka/Desktop/google stoneProject/csv/202106-divvy-tripdata.csv")
+X202105_divvy_tripdata <- read_csv("C:/Users/Antti-Pekka/Desktop/google stoneProject/csv/202105-divvy-tripdata.csv")
+
+# STEP 2: WRANGLE DATA AND COMBINE INTO A SINGLE FILE
+#====================================================
+
+# Compare column names each of the files
+colnames(X202204_divvy_tripdata)
+colnames(X202203_divvy_tripdata)
+colnames(X202202_divvy_tripdata)
+colnames(X202201_divvy_tripdata)
+colnames(X202112_divvy_tripdata)
+colnames(X202111_divvy_tripdata)
+colnames(X202110_divvy_tripdata)
+colnames(X202109_divvy_tripdata)
+colnames(X202108_divvy_tripdata)
+colnames(X202107_divvy_tripdata)
+colnames(X202106_divvy_tripdata)
+colnames(X202105_divvy_tripdata)
+
+
+# Merge all of the data frames into one year view
+all_trips <-  rbind (X202105_divvy_tripdata,
+                     X202106_divvy_tripdata,
+                     X202107_divvy_tripdata,
+                     X202108_divvy_tripdata,
+                     X202109_divvy_tripdata,
+                     X202110_divvy_tripdata,
+                     X202111_divvy_tripdata,
+                     X202112_divvy_tripdata,
+                     X202201_divvy_tripdata,
+                     X202202_divvy_tripdata,
+                     X202203_divvy_tripdata,
+                     X202204_divvy_tripdata)
+View(all_trips)
+
+# Remove individual month data frames to clear up space in the environment 
+remove(X202105_divvy_tripdata,
+       X202106_divvy_tripdata,
+       X202107_divvy_tripdata,
+       X202108_divvy_tripdata,
+       X202109_divvy_tripdata,
+       X202110_divvy_tripdata,
+       X202111_divvy_tripdata,
+       X202112_divvy_tripdata,
+       X202201_divvy_tripdata,
+       X202202_divvy_tripdata,
+       X202203_divvy_tripdata,
+       X202204_divvy_tripdata)
+
+# Create new data frame to contain new columns
+all_trips_V1 <- all_trips 
+
+
+
+# STEP 3: PROCESS DATA TO PREPARE FOR ANALYSIS
+#==============================================
+
+# Calculate ride length by subtracting ended_at time from started_at time and converted it to minutes
+all_trips_V1$ride_length <- difftime(all_trips_V1$ended_at, all_trips_V1$started_at, units = "mins")
+# check column name to make sure the new column was successfully created.
+colnames(all_trips_V1)
+
+# Create columns for: day of week
+all_trips_V1$date <- as.Date(all_trips_V1$started_at) #create column for date,default format is yyyy-mm-dd, use start date
+all_trips_V1$day_of_week <- wday(all_trips_V1$started_at) #create column for day of week, way() returns the day of the week as a decimal number(Monday=1)  
+all_trips_V1$day_of_week <- format(as.Date(all_trips_V1$date), "%A") #format() convert number to character format
+
+# Inspect a dataset in R to make sure column is added
+colnames(all_trips_V1)
+View(all_trips_V1)
+
+# Create columns for: day of week
+all_trips_V1$date <- as.Date(all_trips_V1$started_at) #create column for date,default format is yyyy-mm-dd, use start date
+all_trips_V1$day_of_week <- wday(all_trips_V1$started_at) #create column for day of week, way() returns the day of the week as a decimal number(Monday=1)  
+all_trips_V1$day_of_week <- format(as.Date(all_trips_V1$date), "%A") #format() convert number to character format
+
+# Extract the time value from started_at column as hms and fill into new column for TIME
+all_trips_V1$time <- as_hms((all_trips_V1$started_at)) # as_hms() extract the time value from hour, minute, and second values默认转型 有数据 00:26:41
+
+# Extract Hour value from TIME column (integer 24h)
+all_trips_V1$hour <- hour(all_trips_V1$time) #create new column for hour, and extract hour from Date & Time Object Using lubridate Package
+
+# Create new variable using case_when() and mutate() function
+all_trips_V1 <- all_trips_V1 %>% mutate(season = 
+                                         case_when(month == "03" ~ "Spring",
+                                                   month == "04" ~ "Spring",
+                                                   month == "05" ~ "Spring",
+                                                   month == "06"  ~ "Summer",
+                                                   month == "07"  ~ "Summer",
+                                                   month == "08"  ~ "Summer",
+                                                   month == "09" ~ "Fall",
+                                                   month == "10" ~ "Fall",
+                                                   month == "11" ~ "Fall",
+                                                   month == "12" ~ "Winter",
+                                                   month == "01" ~ "Winter",
+                                                   month == "01" ~ "Winter")
+)
+
+# Create column for different time_of_day: Night, Morning, Afternoon, Evening
+all_trips_V1 <-all_trips_V1 %>% mutate(time_of_day = 
+                                             case_when(hour == "0" ~ "Night",
+                                                       hour == "1" ~ "Night",
+                                                       hour == "2" ~ "Night",
+                                                       hour == "3" ~ "Night",
+                                                       hour == "4" ~ "Night",
+                                                       hour == "5" ~ "Night",
+                                                       hour == "6" ~ "Morning",
+                                                       hour == "7" ~ "Morning",
+                                                       hour == "8" ~ "Morning",
+                                                       hour == "9" ~ "Morning",
+                                                       hour == "10" ~ "Morning",
+                                                       hour == "11" ~ "Morning",
+                                                       hour == "12" ~ "Afternoon",
+                                                       hour == "13" ~ "Afternoon",
+                                                       hour == "14" ~ "Afternoon",
+                                                       hour == "15" ~ "Afternoon",
+                                                       hour == "16" ~ "Afternoon",
+                                                       hour == "17" ~ "Afternoon",
+                                                       hour == "18" ~ "Evening",
+                                                       hour == "19" ~ "Evening",
+                                                       hour == "20" ~ "Evening",
+                                                       hour == "21" ~ "Evening",
+                                                       hour == "22" ~ "Evening",
+                                                       hour == "23" ~ "Evening")
+)
+
+
+colnames(all_trips_V1)
+View(all_trips_V1)
+
+
+# Remove NA Values of the dataset
+all_trips_V2 <- na.omit(all_trips_V1) # use na.omit() to drop rows with NA values
+View(all_trips_V2)
+# Remove duplicates  and keep only unique rows of the dataset
+all_trips_V2<- distinct(all_trips_V2) # use distinct() to keep only unique/distinct rows from the data frame.
+# Remove  0 or negative value based on column ride_length
+all_trips_V3 <- all_trips_V2 [!(all_trips_V2$ride_length <=0),]
+##check updated dataframe
+View(all_trips_V3)
+# Remove unwanted column(s) by name of the dataset
+all_trips_V4 <- all_trips_V3 %>%  #remove columns : ride_id, start_station_id, end_station_id, start_lat, start_long, end_lat, end_lng
+  select(-c(ride_id, start_station_id, end_station_id,start_lat,start_lng,end_lat,end_lng)) 
+
+#print modified dataframe  all_trips_V4 
+View(all_trips_V4 )
+
+#======================================================
+# Inspect the modified dataframe
+colnames(all_trips_V4 )  #List of column names
+nrow(all_trips_V4 )  #total number of rides
+dim(all_trips_V4 )  #Dimensions
+head(all_trips_V4 )  #overview the first 6 rows of data frame.  Also tail(all_trips)
+str(all_trips_V4 )  #List of columns and data types (numeric, character, etc)
+summary(all_trips_V4 )  #Statistical summary of data. Mainly for numerics
+
+# STEP 4: CONDUCT DESCRIPTIVE ANALYSIS
+#=====================================
+#  Descriptive analysis on ride_length (all figures in seconds)
+
+mean(all_trips_V4$ride_length) #straight average (total ride length / rides)
+median(all_trips_V4$ride_length) #midpoint number in the ascending array of ride lengths
+max(all_trips_V4$ride_length) #longest ride
+min(all_trips_V4$ride_length) #shortest ride
+summary(all_trips_V4$ride_length)  #Statistical summary on the specific attribute. Mainly for numerics
+
+# Compare members and casual users
+aggregate(all_trips_V4$ride_length ~ all_trips_V4$member_casual, FUN = mean) #calculate the mean $ride_length for each type of user : members vs casual users
+aggregate(all_trips_V4$ride_length ~ all_trips_V4$member_casual, FUN = median) #calculate the middle point of $ride_length for members vs casual users 
+aggregate(all_trips_V4$ride_length ~ all_trips_V4$member_casual, FUN = max) #calculate the max$ride_length for members vs casual users 
+aggregate(all_trips_V4$ride_length ~ all_trips_V4$member_casual, FUN = min) #calculate the min$ride_length for members vs casual users 
+
+# Calculate the average ride time by each day for members vs casual users
+aggregate(all_trips_V4$ride_length ~ all_trips_V4$member_casual + all_trips_V4$day_of_week, FUN = mean)
+
+# Sort the days of the week  in the order  ( from Sunday to Saturday) using ordered()function
+all_trips_V4$day_of_week <- ordered(all_trips_V4$day_of_week, levels=c("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"))
+
+# Run the average ride time by each day for members vs casual users
+aggregate(all_trips_V4$ride_length ~ all_trips_V4$member_casual + all_trips_V4$day_of_week, FUN = mean)
+
+# Analyze ridership data by type and weekday
+all_trips_V4 %>% 
+  mutate(weekday = lubridate::wday(started_at, label = TRUE)) %>%  #creates weekday column using wday()
+  group_by(member_casual, weekday) %>%  #compute the summary by grouping the variable ` usertype and `  weekday
+  summarise(number_of_rides = n()				#Compute the number of ride rows using n()
+            ,average_duration = mean(ride_length)) %>% 	# Compute the average duration using mean()
+  arrange(member_casual, weekday)		# arrange rows by variables` usertype and `  weekday
+
+## Let's create a visualization for average duration
+all_trips_V4 %>% 
+  mutate(weekday = lubridate::wday(started_at, label = TRUE)) %>% 
+  group_by(member_casual, weekday) %>% 
+  summarise(number_of_rides = n()
+            ,average_duration = mean(ride_length)) %>% 
+  arrange(member_casual, weekday)  %>% 
+  ggplot(aes(x = weekday, y = average_duration, fill = member_casual)) +
+  geom_col(position = "dodge")
+
+# STEP 5: EXPORT SUMMARY FILE FOR FURTHER ANALYSIS
+#=================================================
+Cyclistic <- aggregate(all_trips_V4$ride_length ~ all_trips_V4$member_casual + all_trips_V4$day_of_week, FUN = mean)
+
+write.csv(Cyclistic, "Cyclistic.csv")
